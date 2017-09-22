@@ -1,0 +1,23 @@
+{
+  "name": "api-ai-personal-assistant-demo",
+  "description": "",
+  "main": "server.js",
+  "authors": [
+    "Oh",
+    "Isaac (US - Los Angeles) <ioh@deloitte.com>"
+  ],
+  "license": "ISC",
+  "homepage": "https://github.com/sitepoint-editors/Api-AI-Personal-Assistant-Demo",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "bootstrap": "^3.3.7",
+    "masonry": "^4.2.0",
+    "jquery": "^3.2.1"
+  }
+}
