@@ -8,21 +8,6 @@ var accessToken = "ee7ddfa17b63455190faa6859296b016",
   messageInternalError = "Oh no, there has been an internal server error",
   messageSorry = "I'm sorry, I don't have the answer to that yet.";
 
-var predictHQSecretKey = 'ybjNxxtz5GMJdIDBKQ3isG9bXX2DYq2nEAQyc2Ig';
-var predictHQAccessToken = '6AX5dG9E5w36gFJRNsqjw2mByfX9uI';
-
-var Client = require('predicthq');
-
-var phq = new Client({access_token: predictHQAccessToken})
-
-phq.events.search({q: 'Madonna', rank_level: 5, country:'AU', 'start.gte' : '2016-01-01'})
-  .then(function(results){
-    var events = results.toArray();
-    for (var i = 0; i < events.length; i++) {
-      console.log(events[i].rank, events[i].category, events[i].title, events[i].start, events[i].location);
-    }
-  });
-
 $(document).ready(function() {
   $speechInput = $("#speech");
   $recBtn = $("#rec");
