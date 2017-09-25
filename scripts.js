@@ -8,6 +8,8 @@ var accessToken = "ee7ddfa17b63455190faa6859296b016",
   messageInternalError = "Oh no, there has been an internal server error",
   messageSorry = "I'm sorry, I don't have the answer to that yet.";
 
+var eventBriteToken = 'EP5XIBBB4YAVJ2FZDHAE';
+
 $(document).ready(function() {
   $speechInput = $("#speech");
   $recBtn = $("#rec");
@@ -27,12 +29,13 @@ $(document).ready(function() {
 function startRecognition() {
   recognition = new webkitSpeechRecognition();
   recognition.continuous = false;
-      recognition.interimResults = false;
+  recognition.interimResults = false;
 
   recognition.onstart = function(event) {
     respond(messageRecording);
     updateRec();
   };
+
   recognition.onresult = function(event) {
     recognition.onend = null;
 
@@ -43,11 +46,14 @@ function startRecognition() {
       setInput(text);
     stopRecognition();
   };
+
   recognition.onend = function() {
     respond(messageCouldntHear);
     stopRecognition();
   };
+
   recognition.lang = "en-US";
+
   recognition.start();
 }
 
@@ -113,10 +119,37 @@ function prepareResponse(val) {
 
   spokenResponse = spokenResponse + '.';
 
-  responsiveVoice.speak(spokenResponse, "US English Male", {pitch: .01}, {rate: .1});
+  // responsiveVoice.speak(spokenResponse, "US English Male", {pitch: .01}, {rate: .1});
   // respond(spokenResponse);
 
-  // useCustomVoice(spokenResponse);
+  var $events = $("#events");
+
+  $.ajax({
+    url: 'https://www.eventbriteapi.com/v3/events/search/?token='+ eventBriteToken + '&location.address="LA"',
+    type: 'GET',
+    success: function(res) {
+      if (res.events.length) {
+        var eventsCap = 2;
+          var s = "<ul class='eventList'>";
+          for(var i = 0; i < eventsCap; i++) {
+              var event = res.events[i];
+              console.dir(event);
+              s += "<li><a href='" + event.url + "' target='_blank'>" + event.name.text + "</a></li>";
+          }
+          s += "</ul>";
+          $events.html(s);
+      } else {
+        var spokenResponse = 'my sincere apologies sir but there doesn\'t seem to be any parties there.';
+        useCustomVoice(spokenResponse);
+      }
+    },
+    error: function(data) {
+      var spokenResponse = 'my sincere apologies sir but there doesn\'t seem to be any parties there.';
+      useCustomVoice(spokenResponse);
+    }
+  });
+
+  useCustomVoice(spokenResponse);
 
   clearInput();
 }
@@ -143,30 +176,13 @@ function respond(val) {
 
 function useCustomVoice(spokenResponse) {
   if ('speechSynthesis' in window) {
-    speechSynthesis.onvoiceschanged = function() {
-      var $voicelist = $('#voices');
-
-      if($voicelist.find('option').length == 0) {
-        speechSynthesis.getVoices().forEach(function(voice, index) {
-          console.log(voice);
-          var $option = $('<option>')
-          .val(index)
-          .html(voice.name + (voice.default ? ' (default)' :''));
-
-          $voicelist.append($option);
-        });
-
-        $voicelist.material_select();
-      }
-    }
-
     var text = spokenResponse;
     var msg = new SpeechSynthesisUtterance();
     var voices = window.speechSynthesis.getVoices();
-    console.log(voices);
-    msg.voice = voices[57];
-    msg.rate = .8;
-    msg.pitch = 0;
+
+    msg.voice = voices[67];
+    msg.rate = 1;
+    msg.pitch = 1;
     msg.text = text;
 
     msg.onend = function(e) {
@@ -176,7 +192,6 @@ function useCustomVoice(spokenResponse) {
     console.log(speechSynthesis);
 
     speechSynthesis.speak(msg);
-  } else {
-    $('#modal1').openModal();
+
   }
 }

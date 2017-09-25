@@ -93,3 +93,12 @@ input:active, input:focus, textarea:active, textarea:focus {
   background-color: #040E23;
   color: #7584A2;
   padding: 1em; }
+
+.eventList {
+  color: #FFFFFF; }
+
+li a {
+  color: white;
+  text-decoration: none; }
+  li a:hover {
+    text-decoration: underline; }
