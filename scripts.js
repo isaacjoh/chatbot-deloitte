@@ -1,16 +1,37 @@
-var accessToken = "ee7ddfa17b63455190faa6859296b016",
-  baseUrl = "https://api.api.ai/v1/query?v=20170710",
-  $speechInput,
-  $recBtn,
-  recognition,
-  messageRecording = "Recording...",
-  messageCouldntHear = "I couldn't hear you, could you say that again?",
-  messageInternalError = "Oh no, there has been an internal server error",
-  messageSorry = "I'm sorry, I don't have the answer to that yet.";
-
-var eventBriteToken = 'EP5XIBBB4YAVJ2FZDHAE';
-
 $(document).ready(function() {
+  var accessToken = "ee7ddfa17b63455190faa6859296b016",
+      baseUrl = "https://api.api.ai/v1/query?v=20170710",
+      $speechInput,
+      $recBtn,
+      messageRecording = "Recording...",
+      messageCouldntHear = "I couldn't hear you, could you say that again?",
+      messageInternalError = "Oh no, there has been an internal server error",
+      messageSorry = "I'm sorry, I don't have the answer to that yet.";
+
+  var recognizing = false;
+  var recognition = new webkitSpeechRecognition();
+
+  recognition.continuous = false;
+  reset();
+
+  recognition.lang = "en-US";
+
+  recognition.onresult = function(event) {
+
+    var text = "";
+    for (var i = event.resultIndex; i < event.results.length; ++i) {
+      text += event.results[i][0].transcript;
+    }
+
+    setInput(text);
+
+    console.log(text);
+  };
+
+  recognition.onerror = function(event) {
+    console.log(event.error);
+  };
+
   $speechInput = $("#speech");
   $recBtn = $("#rec");
 
@@ -21,177 +42,144 @@ $(document).ready(function() {
     }
   });
 
-  $recBtn.on("click", function(event) {
+  $recBtn.on('click', function(event) {
+    event.preventDefault();
     switchRecognition();
   });
-});
 
-function startRecognition() {
-  recognition = new webkitSpeechRecognition();
-  recognition.continuous = false;
-  recognition.interimResults = false;
+  useCustomVoice('Good afternoon, Master Wayne');
 
-  recognition.onstart = function(event) {
-    respond(messageRecording);
+  function reset() {
+    recognizing = false;
+  }
+
+  function startRecognition() {
+    recognition.start();
+    recognizing = true;
     updateRec();
-  };
+  }
 
-  recognition.onresult = function(event) {
-    recognition.onend = null;
-
-    var text = "";
-      for (var i = event.resultIndex; i < event.results.length; ++i) {
-        text += event.results[i][0].transcript;
-      }
-      setInput(text);
-    stopRecognition();
-  };
-
-  recognition.onend = function() {
-    respond(messageCouldntHear);
-    stopRecognition();
-  };
-
-  recognition.lang = "en-US";
-
-  recognition.start();
-}
-
-function stopRecognition() {
-  if (recognition) {
+  function stopRecognition() {
     recognition.stop();
-    recognition = null;
+    reset();
+    updateRec();
   }
-  updateRec();
-}
 
-function switchRecognition() {
-  if (recognition) {
-    stopRecognition();
-  } else {
-    startRecognition();
-  }
-}
-
-function setInput(text) {
-  $speechInput.val(text);
-  send();
-}
-
-function updateRec() {
-  $recBtn.text(recognition ? "Stop" : "Speak");
-}
-
-function send() {
-  var text = $speechInput.val();
-
-  var payload = {};
-
-  $.ajax({
-    type: "POST",
-    url: baseUrl,
-    contentType: "application/json; charset=utf-8",
-    dataType: "json",
-    headers: {
-      "Authorization": "Bearer " + accessToken
-    },
-    data: JSON.stringify({query: text, lang: "en", sessionId: "chatbot-deloitte"}),
-    success: function(data) {
-      prepareResponse(data);
-    },
-    error: function() {
-      respond(messageInternalError);
-    }
-  });
-}
-
-function prepareResponse(val) {
-  var debugJSON = JSON.stringify(val, undefined, 2);
-  var spokenResponse = val.result.speech;
-
-  if (!spokenResponse) {
-    spokenResponse = val.result.fulfillment.speech;
-
-    if (!spokenResponse) {
-      spokenResponse = val.result.fulfillment.messages[0].speech;
+  function switchRecognition() {
+    if (recognizing) {
+      stopRecognition();
+    } else {
+      startRecognition();
     }
   }
 
-  spokenResponse = spokenResponse + '.';
+  function setInput(text) {
+    $speechInput.val(text);
+    send();
+  }
 
-  // responsiveVoice.speak(spokenResponse, "US English Male", {pitch: .01}, {rate: .1});
-  // respond(spokenResponse);
+  function updateRec() {
+    $recBtn.text(recognizing ? "Stop" : "Speak");
+  }
 
-  var $events = $("#events");
+  function send() {
+    var text = $speechInput.val();
 
-  $.ajax({
-    url: 'https://www.eventbriteapi.com/v3/events/search/?token='+ eventBriteToken + '&location.address="LA"',
-    type: 'GET',
-    success: function(res) {
-      if (res.events.length) {
-        var eventsCap = 2;
-          var s = "<ul class='eventList'>";
-          for(var i = 0; i < eventsCap; i++) {
-              var event = res.events[i];
-              console.dir(event);
-              s += "<li><a href='" + event.url + "' target='_blank'>" + event.name.text + "</a></li>";
-          }
-          s += "</ul>";
-          $events.html(s);
-      } else {
-        var spokenResponse = 'my sincere apologies sir but there doesn\'t seem to be any parties there.';
+    var payload = {};
+
+    $.ajax({
+      type: "POST",
+      url: baseUrl,
+      contentType: "application/json; charset=utf-8",
+      dataType: "json",
+      headers: {
+        "Authorization": "Bearer " + accessToken
+      },
+      data: JSON.stringify({query: text, lang: "en", sessionId: "chatbot-deloitte"}),
+      success: function(data) {
+        prepareResponse(data);
+      },
+      error: function() {
+        respond(messageInternalError);
+      }
+    });
+
+    var location = 'Los Angeles';
+    $.ajax({
+      url: 'https://us-central1-newagent-1185b.cloudfunctions.net/api3/?location=' + location,
+      type: 'GET',
+      success: function(res) {
+        console.log(res);
+      },
+      error: function(data) {
+        let spokenResponse = 'my sincere apologies sir but there doesn\'t seem to be any parties there.';
         useCustomVoice(spokenResponse);
       }
-    },
-    error: function(data) {
-      var spokenResponse = 'my sincere apologies sir but there doesn\'t seem to be any parties there.';
-      useCustomVoice(spokenResponse);
+    });
+  }
+
+  function prepareResponse(val) {
+    var debugJSON = JSON.stringify(val, undefined, 2);
+    var spokenResponse = val.result.speech;
+
+    if (!spokenResponse) {
+      spokenResponse = val.result.fulfillment.speech;
+
+      if (!spokenResponse) {
+        spokenResponse = val.result.fulfillment.messages[0].speech;
+      }
     }
-  });
 
-  useCustomVoice(spokenResponse);
+    spokenResponse = spokenResponse + '.';
 
-  clearInput();
-}
+    // responsiveVoice.speak(spokenResponse, "US English Male", {pitch: .01}, {rate: .1});
+    // respond(spokenResponse);
 
-function clearInput() {
-  $('input').val('');
-}
+    useCustomVoice(spokenResponse);
 
-function respond(val) {
-  if (val == "") {
-    val = messageSorry;
+    clearInput();
   }
 
-  if (val !== messageRecording) {
-    var msg = new SpeechSynthesisUtterance();
-    msg.voiceURI = "native";
-    msg.text = val;
-    msg.lang = "en-US";
-    window.speechSynthesis.speak(msg);
+  function clearInput() {
+    $('input').val('');
   }
 
-  $("#spokenResponse").addClass("is-active").find(".spoken-response__text").html(val);
-}
+  function respond(val) {
+    if (val == "") {
+      val = messageSorry;
+    }
 
-function useCustomVoice(spokenResponse) {
-  if ('speechSynthesis' in window) {
-    var text = spokenResponse;
-    var msg = new SpeechSynthesisUtterance();
-    var voices = window.speechSynthesis.getVoices();
+    if (val !== messageRecording) {
+      var msg = new SpeechSynthesisUtterance();
+      msg.voiceURI = "native";
+      msg.text = val;
+      msg.lang = "en-US";
+      window.speechSynthesis.speak(msg);
+    }
 
-    msg.voice = voices[67];
-    msg.rate = 1;
-    msg.pitch = 1;
-    msg.text = text;
-
-    msg.onend = function(e) {
-      console.log('Finished in ' + event.elapsedTime + ' seconds.');
-    };
-
-    console.log(speechSynthesis);
-
-    speechSynthesis.speak(msg);
-
+    $("#spokenResponse").addClass("is-active").find(".spoken-response__text").html(val);
   }
-}
+
+  function useCustomVoice(spokenResponse) {
+    if ('speechSynthesis' in window) {
+      var text = spokenResponse;
+      var msg = new SpeechSynthesisUtterance();
+      var voices = window.speechSynthesis.getVoices();
+
+      msg.voice = voices[67];
+      msg.rate = 1;
+      msg.pitch = 0;
+      msg.text = text;
+
+      msg.onend = function(e) {
+        console.log('Finished in ' + event.elapsedTime + ' seconds.');
+      };
+
+      console.log(speechSynthesis);
+
+      speechSynthesis.speak(msg);
+
+    }
+  }
+
+});
